@@ -26,7 +26,7 @@ public class ThirteenthPointTest {
     }
 
     @Test
-    void testWhenCurrentGoalIsNotAHakasutyun() {
+    void testWhenCurrentGoalIsNotAContradiction() {
         Goal currentGoal = new Goal("(A⊃B)", false);
         goals.push(currentGoal);
         Mockito.doNothing().when(algorithm).forthPoint();
@@ -36,7 +36,7 @@ public class ThirteenthPointTest {
     }
 
     @Test
-    void testWhenCurrentGoalIsAHakasutyun() {
+    void testWhenCurrentGoalIsAContradiction() {
         Goal currentGoal = new Goal("⊥", false);
         goals.push(currentGoal);
         Mockito.doNothing().when(algorithm).fourteenthPoint();

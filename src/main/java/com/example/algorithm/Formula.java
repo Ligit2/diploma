@@ -28,6 +28,9 @@ public class Formula {
     public void addLabel(String label) {
         this.labels.add(label);
     }
+    public void addLabel(List<String> labels){
+        labels.forEach(this::addLabel);
+    }
 
     public String getFormula() {
         return formula;

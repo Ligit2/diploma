@@ -49,7 +49,7 @@ public class Precondition extends Formula {
                 ", labels=" + labels +
                 ", type='" + type + '\'' +
                 ", index Of V0=" + indexOfV0 +
-                ", blocked="+ blocked+
+                ", blocked=" + blocked +
                 '}';
     }
 
@@ -67,15 +67,11 @@ public class Precondition extends Formula {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Precondition that = (Precondition) o;
-        return blocked == that.blocked && indexOfV0 == that.indexOfV0 && Objects.equals(type, that.type);
-    }
-
-    @Override
     public int hashCode() {
         return Objects.hash(type, blocked, indexOfV0);
+    }
+
+    public void removeLabels() {
+        this.labels.clear();
     }
 }

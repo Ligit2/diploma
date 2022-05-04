@@ -36,7 +36,7 @@ public class ForthPointTest {
     }
 
     @Test
-    void testWhenCurrentGoalContainsConduction() {
+    void testWhenCurrentGoalContainsDenial() {
         Goal goal = new Goal("(¬A)", false);
         goals.push(goal);
         Mockito.doNothing().when(algorithm).fifthPoint(goal);
@@ -60,7 +60,7 @@ public class ForthPointTest {
     }
 
     @Test
-    void testWhenCurrentGoalContainsHakasutyun() {
+    void testWhenCurrentGoalContainsContradiction() {
         Goal goal = new Goal("⊥", false);
         goals.push(goal);
         Mockito.doNothing().when(algorithm).forthPoint();
