@@ -1,10 +1,14 @@
 package com.example.algorithm;
 
+import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.*;
 
 public class Algorithm {
     List<Precondition> preconditions = new ArrayList<>();
     Stack<Goal> goals = new Stack<>();
+    Gui l = new Gui();
 
     Algorithm() {
     }
@@ -23,15 +27,22 @@ public class Algorithm {
         }
     }
 
-    public void start(String mainFormula, String preconditionsList) throws MetaStatementNotProvableException {
-        firstPoint(mainFormula, preconditionsList);
-        boolean checkIfPreconditionsPresent = secondPoint();
+    public void start(String mainFormula, String preconditionsList) throws MetaStatementNotProvableException, InterruptedException {
+        firstPoint(Utils.detect(mainFormula), preconditionsList);
+
+//        ActionListener actionListener = e -> {
+       boolean checkIfPreconditionsPresent = secondPoint();
+        //l.frame.dispose();
         if (checkIfPreconditionsPresent) {
             thirdPoint();
         } else {
             forthPoint();
         }
+       // };
+//       l.button.addActionListener(actionListener);
+//      l.prepareGUI(this.preconditions, this.goals);
     }
+
 
     public void firstPoint(String mainFormula, String preconditionsList) {
         System.out.println("1 called");
@@ -57,26 +68,18 @@ public class Algorithm {
             if (preconditions.get(i).getFormula().length() != 1 &&
                     !preconditions.get(i).getLabels().contains("V0") &&
                     !preconditions.get(i).isBlocked()
-                //!preconditions.get(i).getLabels().contains("V+0")
             ) {
                 switch (preconditions.get(i).getMainSign()) {
                     case "&": {
-                        boolean accepted = false;
-                        //if (!Helper.isPreconditionPresent(this.preconditions, preconditions.get(i).getRightPart())) {
-                        accepted = Utils.updatePreconditions(this.goals, this.preconditions, preconditions.get(i).getRightPart(), i);
-                        //}
-                        //if (!Helper.isPreconditionPresent(this.preconditions, preconditions.get(i).getLeftPart())) {
-                        accepted = Utils.updatePreconditions(this.goals, this.preconditions, preconditions.get(i).getLeftPart(), i);
-                        //}
-                        if (accepted) {
-                            preconditions.get(i).addLabel("V0");
-                            System.out.println("Updating label of precondition -> " + preconditions.get(i));
-                            i = -1;
-                        }
+
+                        Utils.updatePreconditions(this.goals, this.preconditions, preconditions.get(i).getRightPart(), i);
+                        Utils.updatePreconditions(this.goals, this.preconditions, preconditions.get(i).getLeftPart(), i);
+                        preconditions.get(i).addLabel("V0");
+                        System.out.println("Updating label of precondition -> " + preconditions.get(i));
+                        i = -1;
                         break;
                     }
                     case "∨": {
-                        // !Helper.isPreconditionPresent(this.preconditions, preconditions.get(i).getRightPart()) &&
                         if (Utils.isPreconditionPresent(this.preconditions, "(¬" + preconditions.get(i).getLeftPart() + ")")) {
                             Utils.updatePreconditions(this.goals, this.preconditions, i, "∨e");
                             i = -1;
@@ -86,24 +89,12 @@ public class Algorithm {
                     case "¬": {
                         Precondition precondition = new Precondition(preconditions.get(i).getRightPart());
                         if (!(precondition.getFormula().length() == 1) && precondition.getMainSign().equals("¬")) {
-                            //if (!Helper.isPreconditionPresent(this.preconditions, precondition.getRightPart())) {
-                            preconditions.get(i).addLabel("V0");
-                            System.out.println("Updating label of precondition -> " + preconditions.get(i));
-                            Precondition p = new Precondition(precondition.getRightPart(), "¬¬e", "V+0");
-                            p.setIndexOfV0(i);
-                            System.out.println("Adding precondition -> " + p);
-                            List<String> labelsFromMainGoal = Utils.getLabelsFromMainGoal(this.goals);
-                            if (!labelsFromMainGoal.isEmpty()) {
-                                p.addLabel(labelsFromMainGoal);
-                            }
-                            preconditions.add(p);
+                            Utils.updatePreconditions(this.goals, this.preconditions,i, precondition);
                             i = -1;
-                            //}
                         }
                         break;
                     }
                     case "⊃": {
-                        //!Helper.isPreconditionPresent(this.preconditions, preconditions.get(i).getRightPart()) &&
                         if (Utils.isPreconditionPresent(this.preconditions, preconditions.get(i).getLeftPart())) {
                             Utils.updatePreconditions(this.goals, this.preconditions, i, "⊃e");
                             i = -1;
@@ -186,29 +177,23 @@ public class Algorithm {
 
     public void eightPoint(Goal currentGoal) {
         System.out.println("8 called");
-//        if (currentGoal.getLabels().contains("V2")) {
-//            addPreconditionsBasedOnProvableStatement(currentGoal);
-//            this.goals.pop();
-//            thirdPoint();
-//        } else {
-            Goal Wj = new Goal(currentGoal.getRightPart(), true);
-            Goal Wi = new Goal(currentGoal.getLeftPart(), true);
-            Wj.addLabel("V-4");
-            Wi.addLabel("V-3");
-            this.goals.push(new Goal(Wi.getFormula(), "V-3", false));
-            Stack<Goal> newGoals = new Stack<>();
-            newGoals.push(Wi);
-            Algorithm algorithm = new Algorithm(preconditions, newGoals);
+        Goal Wj = new Goal(currentGoal.getRightPart(), true);
+        Goal Wi = new Goal(currentGoal.getLeftPart(), true);
+        Wj.addLabel("V-4");
+        Wi.addLabel("V-3");
+        this.goals.push(new Goal(Wi.getFormula(), "V-3", false));
+        Stack<Goal> newGoals = new Stack<>();
+        newGoals.push(Wi);
+        Algorithm algorithm = new Algorithm(preconditions, newGoals);
+        try {
+            firstSubPointOfEight(algorithm);
+        } catch (MetaStatementNotProvableException | TemporaryMovingToSecondSubPointOrEight ex) {
             try {
-                firstSubPointOfEight(algorithm);
-            } catch (MetaStatementNotProvableException | TemporaryMovingToSecondSubPointOrEight ex) {
-                try {
-                    secondSubPointOfEight(algorithm, Wj);
-                } catch (MetaStatementNotProvableException | TemporaryMovingToThirdSubPointOrEight ex1) {
-                    thirdSubPointOfEight(currentGoal, algorithm);
-                }
+                secondSubPointOfEight(algorithm, Wj);
+            } catch (MetaStatementNotProvableException | TemporaryMovingToThirdSubPointOrEight ex1) {
+                thirdSubPointOfEight(currentGoal, algorithm);
             }
-        //}
+        }
     }
 
     public void thirdSubPointOfEight(Goal currentGoal, Algorithm algorithm) {
@@ -229,16 +214,6 @@ public class Algorithm {
             this.goals.push(new Goal("⊥", false));
         }
         thirdPoint();
-    }
-
-    private void addPreconditionsBasedOnProvableStatement(Goal currentGoal) {
-        Precondition precondition = this.preconditions.get(currentGoal.getIndexOfV2());
-        precondition.removeLabels();
-        precondition.addLabel("V0");
-        Precondition Wi = new Precondition("(¬" + currentGoal.getLeftPart() + ")", "⊢");
-        Precondition Wj = new Precondition("(¬" + currentGoal.getRightPart() + ")", "⊢");
-        this.preconditions.add(Wi);
-        this.preconditions.add(Wj);
     }
 
     public void firstSubPointOfEight(Algorithm algorithm) {
@@ -323,14 +298,26 @@ public class Algorithm {
                     preconditions.get(previousGoal.getIndexOfV4()).removeLabel("V4");
                 }
             } else if (currentReachedGoal.getLabels().contains("V4")) {
-                if(Utils.getLabelsFromMainGoal(this.goals).contains("V-3") ||
+                if (Utils.getLabelsFromMainGoal(this.goals).contains("V-3") ||
                         Utils.getLabelsFromMainGoal(this.goals).contains("V-4")
-                ){
+                ) {
                     this.preconditions.get(currentReachedGoal.getIndexOfV4()).removeLabel("V4");
                 }
                 System.out.println("current goal has a label V4");
             }
+
+//            ActionListener actionListener = new ActionListener() {
+//                @Override
+//            public void actionPerformed(ActionEvent e) {
+//                    l.frame.dispose();
+//                    thirdPoint();
+//
+//                }
+//            };
+//            l.button.addActionListener(actionListener);
+//            l.prepareGUI(this.preconditions, this.goals);
             thirdPoint();
+
         }
     }
 
@@ -353,17 +340,7 @@ public class Algorithm {
                 addNewGoal(indexOfFirstPreconditionToInspect, preconditionToInspect, newGoal);
                 forthPoint();
             } else if (preconditionToInspect.getMainSign().equals("¬") && preconditionToInspect.getRightPart().length() != 1) {
-                Goal newGoal = new Goal(preconditionToInspect.getRightPart(), "V4", false);
-                System.out.println("Adding new goal -> " + newGoal);
-                newGoal.addLabel(Utils.getLabelsFromMainGoal(this.goals));
-                if (preconditionToInspect.getLabels().contains("V2")) {
-                    newGoal.addLabel("V2");
-                    newGoal.setIndexOfV2(indexOfFirstPreconditionToInspect);
-                }
-                newGoal.setIndexOfV4(indexOfFirstPreconditionToInspect);
-                goals.push(newGoal);
-                System.out.println("Updating preconditions label -> " + preconditionToInspect);
-                preconditions.get(indexOfFirstPreconditionToInspect).addLabel("V4");
+                Utils.updateGoals(this.goals, this.preconditions, indexOfFirstPreconditionToInspect, preconditionToInspect);
                 forthPoint();
             } else if (preconditionToInspect.getMainSign().equals("∨")) {
                 Goal newGoal = new Goal("(¬" + preconditionToInspect.getLeftPart() + ")", "V4", false);
@@ -417,4 +394,49 @@ public class Algorithm {
         preconditions.get(indexOfFirstPreconditionToInspect).addLabel("V4");
     }
 
+    public void anotherPrint() {
+        int max = Math.max(preconditions.size(), goals.size());
+        String[][] array = new String[max + 1][3];
+        for (int i = 0; i < array.length; i++) {
+            if (!preconditions.isEmpty() && i < preconditions.size()) {
+                array[i][0] = preconditions.get(i).getFormula();
+                array[i][1] = preconditions.get(i).getType();
+
+            } else {
+                array[i][0] = "";
+                array[i][1] = "";
+            }
+            if (!goals.isEmpty() && i < goals.size()) {
+                array[i][2] = goals.get(i).formula;
+            } else {
+                array[i][2] = "";
+            }
+        }
+        JFrame f = new JFrame("Table Example");
+
+        String[] column = {"Preconditions", "Types", "Goals"};
+        JButton jButton = new JButton();
+        jButton.setBounds(130, 200, 100, 40);
+        jButton.setText("Click");
+        f.add(jButton);
+        final JTable jt = new JTable(array, column);
+        jt.setBounds(100, 100, 200, 300);
+        JScrollPane sp = new JScrollPane(jt);
+        JTextField textField = new JTextField();
+        f.add(sp);
+        f.setSize(300, 400);
+        f.setVisible(true);
+        jt.setCellSelectionEnabled(true);
+        f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+    }
+    private void addPreconditionsBasedOnProvableStatement(Goal currentGoal) {
+        Precondition precondition = this.preconditions.get(currentGoal.getIndexOfV2());
+        precondition.removeLabels();
+        precondition.addLabel("V0");
+        Precondition Wi = new Precondition("(¬" + currentGoal.getLeftPart() + ")", "⊢");
+        Precondition Wj = new Precondition("(¬" + currentGoal.getRightPart() + ")", "⊢");
+        this.preconditions.add(Wi);
+        this.preconditions.add(Wj);
+    }
 }
