@@ -21,7 +21,7 @@ public class Goal extends Formula {
         setMainSign();
     }
 
-    public Goal(String formula){
+    public Goal(String formula) {
         this.formula = formula;
         setMainSign();
     }
@@ -40,7 +40,7 @@ public class Goal extends Formula {
                 "formula='" + formula + '\'' +
                 ", labels=" + labels +
                 ", mainGoal=" + mainGoal +
-                ", index of V4=" + getIndexOfV4()+
+                ", index of V4=" + getIndexOfV4() +
                 '}';
     }
 
@@ -58,10 +58,18 @@ public class Goal extends Formula {
         return Objects.hash(super.hashCode(), mainGoal);
     }
 
+    public boolean isSimple() {
+        if (this.formula.length() == 1) {
+            return true;
+        }
+        return false;
+    }
+
     public int getIndexOfV2() {
         return indexOfV2;
     }
-    public void setIndexOfV2(int index){
+
+    public void setIndexOfV2(int index) {
         this.indexOfV2 = index;
     }
 }

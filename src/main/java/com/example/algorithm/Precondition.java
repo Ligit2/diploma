@@ -6,7 +6,6 @@ import java.util.Set;
 public class Precondition extends Formula {
     private String type;
     private boolean blocked = false;
-    private int indexOfV0 = -1;
 
     public Precondition(String formula, String type, String label) {
         this.formula = formula;
@@ -14,6 +13,8 @@ public class Precondition extends Formula {
         this.labels.add(label);
         setMainSign();
     }
+
+    private int indexOfV0 = -1;
 
     public Precondition(String formula, String type) {
         this.formula = formula;

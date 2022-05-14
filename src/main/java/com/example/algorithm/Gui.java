@@ -1,72 +1,102 @@
 package com.example.algorithm;
 
 import javax.swing.*;
+import javax.swing.table.TableColumnModel;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.List;
 import java.util.Stack;
 
 public class Gui implements ActionListener {
-    boolean ok = false;
-
-    String preconditions;
-    String mainGoal;
     JFrame frame;
-    JButton button=new JButton("Click Me");
+    JFrame frame1;
+    JTextField jTextField1;
+    JTextField jTextField2;
+    JButton button;
+    Algorithm algorithm;
 
-    Gui(){
-
-    }
-
-    public void prepareGUI(List<Precondition> preconditions, Stack<Goal> goals){
-        int max = Math.max(preconditions.size(), goals.size());
-        String[][] array = new String[max+1][3];
+    public void resultGuiWithSuccess(String name) {
+        int max = Math.max(algorithm.preconditions.size(), algorithm.goalsToTrack.size());
+        Object[][] array = new Object[max][3];
         for (int i = 0; i < array.length; i++) {
-            if(!preconditions.isEmpty() && i<preconditions.size()) {
-                array[i][0] = preconditions.get(i).getFormula();
-                array[i][1] = preconditions.get(i).getType();
+            if (!algorithm.preconditions.isEmpty() && i < algorithm.preconditions.size()) {
+                array[i][0] = algorithm.preconditions.get(i).getFormula();
+                array[i][1] = algorithm.preconditions.get(i).getType();
 
-            }
-            else{
+            } else {
                 array[i][0] = "";
                 array[i][1] = "";
             }
-            if (!goals.isEmpty() && i< goals.size()) {
-                array[i][2] = goals.get(i).formula;
-            }
-            else {
+            if (!algorithm.goalsToTrack.isEmpty() && i < algorithm.goalsToTrack.size()) {
+                array[i][2] = algorithm.goalsToTrack.get(i).formula;
+            } else {
                 array[i][2] = "";
             }
         }
 
-        JFrame frame=new JFrame();
-        this.frame = frame;
-        String[] column ={"Preconditions","Types","Goals"};
-        JButton jButton = new JButton();
-        jButton.setBounds(130,200,100,40);
-        jButton.setText("Click");
-        final JTable jt=new JTable(array,column);
-        jt.setBounds(100,100,200,300);
-        JScrollPane sp=new JScrollPane(jt);
-        frame.add(sp);
-        frame.setSize(300,400);
-        frame.setVisible(true);
-        frame.setTitle("My Window");
-        jt.setCellSelectionEnabled(true);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        button.setBounds(130,200,30,40);
-        frame.add(button);
-
-
+        JFrame frame = new JFrame();
+        String[] column = {"Preconditions", "Types", "Goals"};
+        JTable jt = new JTable(array, column);
+        //jt.setBounds(30, 40, 300, 400);
+        jt.setShowHorizontalLines(true);
+        jt.setShowVerticalLines(true);
+        jt.getTableHeader().setBackground(Color.lightGray);
+        jt.setGridColor(Color.BLACK);
+        JScrollPane jScrollPane = new JScrollPane(jt);
+        this.frame1 = frame;
+        this.frame1.setTitle(name);
+        this.frame1.add(jScrollPane);
+        this.frame1.setSize(600, 400);
+        this.frame1.setVisible(true);
+        this.frame1.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
-    public void buttonProperties(){
-
-        //button.addActionListener(this);
+    Gui(Algorithm algorithm){
+        this.algorithm = algorithm;
+        JFrame f= new JFrame("Let the algorithm solve");
+        this.frame = f;
+        JTextField t1,t2;
+        t1=new JTextField("Insert Preconditions");
+        this.jTextField1 = t1;
+        t1.setBounds(50,100, 300,40);
+        t2=new JTextField("Insert Main Goal");
+        this.jTextField2 = t2;
+        t2.setBounds(50,150, 300,40);
+        this.button = new JButton("solve");
+        button.doClick();
+        this.button.setBounds(250,300,100,20);
+        this.button.addActionListener(this);
+        f.add(t1); f.add(t2); f.add(this.button);
+        f.setSize(400,400);
+        f.setLayout(null);
+        f.setVisible(true);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        this.ok = true;
+        String preconditions = jTextField1.getText();
+        String mainGoal = jTextField2.getText();
+        if(preconditions.equalsIgnoreCase("empty")){
+            try {
+                long start = System.currentTimeMillis();
+                algorithm.start(mainGoal,"");
+                long finish = System.currentTimeMillis();
+                System.out.println(finish - start);
+                resultGuiWithSuccess("SUCCESS");
+                System.out.println(algorithm.preconditions);
+            } catch (InterruptedException | MetaStatementNotProvableException ex) {
+                resultGuiWithSuccess("FAILURE");
+            }
+        }
+        else{
+            try {
+                algorithm.start(mainGoal,preconditions);
+                resultGuiWithSuccess("SUCCESS");
+            } catch (InterruptedException | MetaStatementNotProvableException ex) {
+                resultGuiWithSuccess("FAILURE");
+            }
+        }
+        this.frame.dispose();
     }
-
 }

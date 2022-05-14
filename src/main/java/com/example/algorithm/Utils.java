@@ -1,26 +1,29 @@
 package com.example.algorithm;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.List;
-import java.util.Random;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
 public class Utils {
-    static boolean updatePreconditions(Stack<Goal> goals, List<Precondition> preconditions, String part, int parentIndex) {
+    private static final Logger logger = LoggerFactory.getLogger(Utils.class);
+
+    static void updatePreconditions(Stack<Goal> goals, List<Precondition> preconditions, String part, int parentIndex) {
         Precondition p = new Precondition(part, "&e", "V+0");
         p.setIndexOfV0(parentIndex);
-        System.out.println("Adding precondition -> " + p);
+        logger.info("Adding precondition - {}", p);
         p.addLabel(getLabelsFromMainGoal(goals));
         preconditions.add(p);
-        return true;
     }
 
     static void updatePreconditions(Stack<Goal> goals, List<Precondition> preconditions, int i, Precondition precondition) {
         preconditions.get(i).addLabel("V0");
-        System.out.println("Updating label of precondition -> " + preconditions.get(i));
+        logger.info("Updating label of precondition - {}", preconditions.get(i));
         Precondition p = new Precondition(precondition.getRightPart(), "¬¬e", "V+0");
         p.setIndexOfV0(i);
-        System.out.println("Adding precondition -> " + p);
+        logger.info("Adding precondition - {}", p);
         List<String> labelsFromMainGoal = Utils.getLabelsFromMainGoal(goals);
         if (!labelsFromMainGoal.isEmpty()) {
             p.addLabel(labelsFromMainGoal);
@@ -28,9 +31,9 @@ public class Utils {
         preconditions.add(p);
     }
 
-    static void updateGoals(Stack<Goal> goals, List<Precondition> preconditions,int indexOfFirstPreconditionToInspect, Precondition preconditionToInspect) {
+    static void updateGoals(Stack<Goal> goalsToTrack, Stack<Goal> goals, List<Precondition> preconditions, int indexOfFirstPreconditionToInspect, Precondition preconditionToInspect) {
         Goal newGoal = new Goal(preconditionToInspect.getRightPart(), "V4", false);
-        System.out.println("Adding new goal -> " + newGoal);
+        logger.info("Adding new goal - {}", newGoal);
         newGoal.addLabel(Utils.getLabelsFromMainGoal(goals));
         if (preconditionToInspect.getLabels().contains("V2")) {
             newGoal.addLabel("V2");
@@ -38,29 +41,34 @@ public class Utils {
         }
         newGoal.setIndexOfV4(indexOfFirstPreconditionToInspect);
         goals.push(newGoal);
-        System.out.println("Updating preconditions label -> " + preconditionToInspect);
+        goalsToTrack.push(newGoal);
+        logger.info("Updating preconditions label - {} ", preconditionToInspect);
         preconditions.get(indexOfFirstPreconditionToInspect).addLabel("V4");
     }
 
 
     static void updatePreconditions(Stack<Goal> goals, List<Precondition> preconditions, int parentIndex, String s) {
         preconditions.get(parentIndex).addLabel("V0");
-        System.out.println("Updating label of precondition -> " + preconditions.get(parentIndex));
+        logger.info("Updating preconditions label - {} ", preconditions.get(parentIndex));
         Precondition p = new Precondition(preconditions.get(parentIndex).getRightPart(), s, "V+0");
         p.setIndexOfV0(parentIndex);
-        System.out.println("Adding precondition -> " + p);
+        logger.info("Adding precondition - {}", p);
         p.addLabel(getLabelsFromMainGoal(goals));
         preconditions.add(p);
     }
 
 
     static boolean isPreconditionPresent(List<Precondition> preconditions, String preconditionFormula) {
-        return preconditions.stream().anyMatch(precondition -> !precondition.isBlocked() && precondition.getFormula().equals(preconditionFormula));
+        return preconditions.stream().anyMatch(precondition -> !precondition.isBlocked() &&
+                precondition.getFormula().equals(preconditionFormula));
     }
 
     static int findFirstPreconditionToInspect(List<Precondition> preconditions) {
         for (int i = 0; i < preconditions.size(); i++) {
-            if (!preconditions.get(i).isBlocked() && preconditions.get(i).getFormula().length() != 1 && !preconditions.get(i).getLabels().contains("V0") && !preconditions.get(i).getLabels().contains("V4")) {
+            if (!preconditions.get(i).isBlocked() &&
+                    preconditions.get(i).getFormula().length() != 1 &&
+                    !preconditions.get(i).getLabels().contains("V0") &&
+                    !preconditions.get(i).getLabels().contains("V4")) {
                 return i;
             }
         }
@@ -92,7 +100,7 @@ public class Utils {
         for (int i = index; i < preconditions.size(); i++) {
             int indexOfV0 = preconditions.get(i).getIndexOfV0();
             if (indexOfV0 != -1) {
-                System.out.println("Remove V0 label from " + preconditions.get(indexOfV0));
+                logger.info("Remove V0 label from - {}", preconditions.get(indexOfV0));
                 preconditions.get(indexOfV0).removeLabel("V0");
             }
             preconditions.get(i).setBlocked();
@@ -213,21 +221,5 @@ public class Utils {
         }
         return "";
 
-    }
-    public static int getTheLongestPreconditionSize(List<Precondition> preconditions){
-        int max = 0;
-        for (Precondition precondition : preconditions) {
-            if(precondition.getFormula().length()>max){
-                max = precondition.getFormula().length();
-            }
-        }
-        return max;
-    }
-    public static String fixedLengthString(int length) {
-        String input = new String(new char[length]);
-        input = input.replace('\0', ' ');
-        String format = String.format("%" + length + "s", input);
-        System.out.println(format);
-        return format;
     }
 }
