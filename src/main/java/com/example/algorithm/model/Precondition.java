@@ -1,11 +1,12 @@
-package com.example.algorithm;
+package com.example.algorithm.model;
 
 import java.util.Objects;
 import java.util.Set;
 
 public class Precondition extends Formula {
     private String type;
-    private boolean blocked = false;
+    private boolean blocked;
+    private int indexOfV0 = -1;
 
     public Precondition(String formula, String type, String label) {
         this.formula = formula;
@@ -13,8 +14,6 @@ public class Precondition extends Formula {
         this.labels.add(label);
         setMainSign();
     }
-
-    private int indexOfV0 = -1;
 
     public Precondition(String formula, String type) {
         this.formula = formula;
@@ -43,17 +42,6 @@ public class Precondition extends Formula {
         this.blocked = true;
     }
 
-    @Override
-    public String toString() {
-        return "\nPrecondition{" +
-                "formula='" + formula + '\'' +
-                ", labels=" + labels +
-                ", type='" + type + '\'' +
-                ", index Of V0=" + indexOfV0 +
-                ", blocked=" + blocked +
-                '}';
-    }
-
 
     public int getIndexOfV0() {
         return indexOfV0;
@@ -63,8 +51,8 @@ public class Precondition extends Formula {
         this.indexOfV0 = indexOfV0;
     }
 
-    public void setType(String type) {
-        this.type = type;
+    public void removeLabels() {
+        this.labels.clear();
     }
 
     @Override
@@ -72,7 +60,14 @@ public class Precondition extends Formula {
         return Objects.hash(type, blocked, indexOfV0);
     }
 
-    public void removeLabels() {
-        this.labels.clear();
+    @Override
+    public String toString() {
+        return "\nPrecondition{" +
+                "formula='" + formula + '\'' +
+                ", labels=" + labels +
+                ", type='" + type + '\'' +
+                ", index Of V0=" + indexOfV0 +
+                ", blocked=" + blocked +
+                '}';
     }
 }

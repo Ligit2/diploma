@@ -1,5 +1,7 @@
-package com.example.algorithm;
+package com.example.algorithm.utils;
 
+import com.example.algorithm.model.Goal;
+import com.example.algorithm.model.Precondition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,7 +12,7 @@ import java.util.stream.Collectors;
 public class Utils {
     private static final Logger logger = LoggerFactory.getLogger(Utils.class);
 
-    static void updatePreconditions(Stack<Goal> goals, List<Precondition> preconditions, String part, int parentIndex) {
+    public static void updatePreconditions(Stack<Goal> goals, List<Precondition> preconditions, String part, int parentIndex) {
         Precondition p = new Precondition(part, "&e", "V+0");
         p.setIndexOfV0(parentIndex);
         logger.info("Adding precondition - {}", p);
@@ -18,7 +20,7 @@ public class Utils {
         preconditions.add(p);
     }
 
-    static void updatePreconditions(Stack<Goal> goals, List<Precondition> preconditions, int i, Precondition precondition) {
+    public static void updatePreconditions(Stack<Goal> goals, List<Precondition> preconditions, int i, Precondition precondition) {
         preconditions.get(i).addLabel("V0");
         logger.info("Updating label of precondition - {}", preconditions.get(i));
         Precondition p = new Precondition(precondition.getRightPart(), "¬¬e", "V+0");
@@ -31,7 +33,7 @@ public class Utils {
         preconditions.add(p);
     }
 
-    static void updateGoals(Stack<Goal> goalsToTrack, Stack<Goal> goals, List<Precondition> preconditions, int indexOfFirstPreconditionToInspect, Precondition preconditionToInspect) {
+    public static void updateGoals(Stack<Goal> goalsToTrack, Stack<Goal> goals, List<Precondition> preconditions, int indexOfFirstPreconditionToInspect, Precondition preconditionToInspect) {
         Goal newGoal = new Goal(preconditionToInspect.getRightPart(), "V4", false);
         logger.info("Adding new goal - {}", newGoal);
         newGoal.addLabel(Utils.getLabelsFromMainGoal(goals));
@@ -47,23 +49,23 @@ public class Utils {
     }
 
 
-    static void updatePreconditions(Stack<Goal> goals, List<Precondition> preconditions, int parentIndex, String s) {
+    public static void updatePreconditions(Stack<Goal> goals, List<Precondition> preconditions, int parentIndex, String s) {
         preconditions.get(parentIndex).addLabel("V0");
-        logger.info("Updating preconditions label - {} ", preconditions.get(parentIndex));
-        Precondition p = new Precondition(preconditions.get(parentIndex).getRightPart(), s, "V+0");
-        p.setIndexOfV0(parentIndex);
-        logger.info("Adding precondition - {}", p);
-        p.addLabel(getLabelsFromMainGoal(goals));
-        preconditions.add(p);
+        logger.info("Updating label of precondition - {} ", preconditions.get(parentIndex));
+        Precondition precondition = new Precondition(preconditions.get(parentIndex).getRightPart(), s, "V+0");
+        precondition.setIndexOfV0(parentIndex);
+        logger.info("Adding new precondition - {}", precondition);
+        precondition.addLabel(getLabelsFromMainGoal(goals));
+        preconditions.add(precondition);
     }
 
 
-    static boolean isPreconditionPresent(List<Precondition> preconditions, String preconditionFormula) {
+    public static boolean isPreconditionPresent(List<Precondition> preconditions, String preconditionFormula) {
         return preconditions.stream().anyMatch(precondition -> !precondition.isBlocked() &&
                 precondition.getFormula().equals(preconditionFormula));
     }
 
-    static int findFirstPreconditionToInspect(List<Precondition> preconditions) {
+    public static int findFirstPreconditionToInspect(List<Precondition> preconditions) {
         for (int i = 0; i < preconditions.size(); i++) {
             if (!preconditions.get(i).isBlocked() &&
                     preconditions.get(i).getFormula().length() != 1 &&
@@ -75,11 +77,11 @@ public class Utils {
         return -1;
     }
 
-    static boolean doesPredicationsHaveContradiction(List<Precondition> preconditions) {
+   public static boolean doesPredicationsHaveContradiction(List<Precondition> preconditions) {
         return preconditions.stream().anyMatch(precondition -> !precondition.isBlocked() && isPreconditionPresent(preconditions, "(¬" + precondition.getFormula() + ")"));
     }
 
-    static int getTheLastParcel(List<Precondition> preconditions) {
+    public static int getTheLastParcel(List<Precondition> preconditions) {
         for (int i = preconditions.size() - 1; i >= 0; i--) {
             if (!preconditions.get(i).isBlocked() && preconditions.get(i).getType().equals("parcel")) {
                 return i;
@@ -88,7 +90,7 @@ public class Utils {
         return -1;
     }
 
-    static int indexOf(List<Precondition> preconditions, String formula) {
+    public static int indexOf(List<Precondition> preconditions, String formula) {
         for (int i = 0; i < preconditions.size(); i++) {
             if (preconditions.get(i).getFormula().equals(formula) && !preconditions.get(i).isBlocked())
                 return i;
@@ -96,7 +98,7 @@ public class Utils {
         return -1;
     }
 
-    static void blockPreconditionsAndResetLabels(List<Precondition> preconditions, int index) {
+    public static void blockPreconditionsAndResetLabels(List<Precondition> preconditions, int index) {
         for (int i = index; i < preconditions.size(); i++) {
             int indexOfV0 = preconditions.get(i).getIndexOfV0();
             if (indexOfV0 != -1) {
@@ -107,11 +109,11 @@ public class Utils {
         }
     }
 
-    static Goal getMainGoal(Stack<Goal> goals) {
+    public static Goal getMainGoal(Stack<Goal> goals) {
         return goals.stream().filter(Goal::isMainGoal).findFirst().get();
     }
 
-    static void removePreconditionsWithLabelsV4(List<Precondition> preconditions) {
+    public static void removePreconditionsWithLabelsV4(List<Precondition> preconditions) {
         for (Precondition next : preconditions) {
             if (next.getLabels().contains("V-4")) {
                 if (next.getIndexOfV0() != -1) {
@@ -125,7 +127,7 @@ public class Utils {
         preconditions.removeIf(next -> next.getLabels().contains("V-4"));
     }
 
-    static void removePreconditionsWithLabelsV3(List<Precondition> preconditions) {
+    public static void removePreconditionsWithLabelsV3(List<Precondition> preconditions) {
         for (Precondition next : preconditions) {
             if (next.getLabels().contains("V-3")) {
                 if (next.getIndexOfV0() != -1) {
@@ -139,7 +141,7 @@ public class Utils {
         preconditions.removeIf(next -> next.getLabels().contains("V-3"));
     }
 
-    static void removeLabelsFromPreconditions(List<Precondition> preconditions) {
+    public static void removeLabelsFromPreconditions(List<Precondition> preconditions) {
         preconditions.forEach(precondition -> {
             precondition.removeLabel("V-1");
             precondition.removeLabel("V-2");
@@ -156,7 +158,7 @@ public class Utils {
                 .collect(Collectors.toList());
     }
 
-    public static String detect(String formula) {
+    public static String detectAndReplaceDisjunctionWithImplication(String formula) {
         String leftFormula = "";
         String rightFormula = "";
         for (int i = 0; i < formula.length(); i++) {

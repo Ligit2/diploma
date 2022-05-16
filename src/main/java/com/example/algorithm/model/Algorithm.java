@@ -1,5 +1,10 @@
-package com.example.algorithm;
+package com.example.algorithm.model;
 
+import com.example.algorithm.exception.FormulaContainsUnknownMainSignException;
+import com.example.algorithm.exception.MetaStatementNotProvableException;
+import com.example.algorithm.exception.TemporaryMovingToSecondSubPointOrEight;
+import com.example.algorithm.exception.TemporaryMovingToThirdSubPointOrEight;
+import com.example.algorithm.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,26 +15,28 @@ import java.util.Stack;
 public class Algorithm {
     List<Precondition> preconditions = new ArrayList<>();
     Stack<Goal> goals = new Stack<>();
-    Stack<Goal> goalsToTrack = new Stack<>();
-    int count = 0;
-    private static final Logger logger = LoggerFactory.getLogger(Algorithm.class);
 
     Algorithm(List<Precondition> preconditions, Stack<Goal> goals) {
         this.goals = goals;
         this.preconditions = preconditions;
-
-    }
-
-    private void fillTheStack() {
-        this.goalsToTrack.addAll(this.goals);
     }
 
     public Algorithm() {
-
     }
 
+    public List<Precondition> getPreconditions() {
+        return preconditions;
+    }
 
-    public void isReachable() throws MetaStatementNotProvableException {
+    public void setPreconditions(List<Precondition> preconditions) {
+        this.preconditions = preconditions;
+    }
+
+    public void setGoals(Stack<Goal> goals) {
+        this.goals = goals;
+    }
+
+    public void prove() {
         boolean checkIfPreconditionsPresent = secondPoint();
         if (checkIfPreconditionsPresent) {
             thirdPoint();
@@ -52,25 +59,24 @@ public class Algorithm {
 
     public void firstPoint(String mainFormula, String preconditionsList) {
         logger.info("1 point is called");
-        count++;
+        countOfSteps++;
         if (preconditionsList.length() != 0) {
             String[] split = preconditionsList.split(",");
-            for (String s : split) {
-                preconditions.add(new Precondition(s, "parcel"));
+            for (String formula : split) {
+                preconditions.add(new Precondition(formula, "parcel"));
             }
         }
         goals.add(new Goal(mainFormula, true));
     }
 
     public boolean secondPoint() {
-        count++;
         logger.info("2 point is called");
         return !preconditions.isEmpty();
     }
 
     public void thirdPoint() {
-        count++;
         logger.info("3 point is called");
+        countOfSteps++;
         for (int i = 0; i < preconditions.size(); i++) {
             if (preconditions.get(i).getFormula().length() != 1 &&
                     !preconditions.get(i).getLabels().contains("V0") &&
@@ -89,7 +95,6 @@ public class Algorithm {
                                 constructDenial(preconditions.get(i).getLeftPart()))) {
                             Utils.updatePreconditions(this.goals, this.preconditions, i, "∨e");
                         }
-
                         break;
                     }
                     case "¬": {
@@ -103,21 +108,16 @@ public class Algorithm {
                         if (Utils.isPreconditionPresent(this.preconditions, preconditions.get(i).getLeftPart())) {
                             Utils.updatePreconditions(this.goals, this.preconditions, i, "⊃e");
                         }
-                        break;
                     }
                 }
             }
         }
-        eleventhPoint();
-    }
-
-    private String constructDenial(String formula) {
-        return "(¬" + formula + ")";
+        ninthPoint();
     }
 
     public void forthPoint() {
         logger.info("4 point is called");
-        count++;
+        countOfSteps++;
         Goal currentGoal = goals.peek();
         String currentGoalMainSign = currentGoal.getMainSign();
         if ((currentGoal.formula.length() == 1 &&
@@ -129,7 +129,7 @@ public class Algorithm {
             sixthPoint(currentGoal);
             thirdPoint();
         } else if (currentGoal.getFormula().equals("⊥")) {
-            fourteenthPoint();
+            twelfthPoint();
         } else if (currentGoal.getMainSign().equals("&")) {
             seventhPoint(currentGoal);
         } else if (currentGoal.getMainSign().equals("∨")) {
@@ -140,8 +140,8 @@ public class Algorithm {
     }
 
     public void fifthPoint(Goal currentGoal) {
-        System.out.println("5 called");
-        count++;
+        logger.info("4 point is called");
+        countOfSteps++;
         String formulaWithDenial = "(¬" + currentGoal.formula + ")";
         Precondition newPrecondition = new Precondition(formulaWithDenial, "parcel");
         logger.info("Adding new precondition - {} ", newPrecondition);
@@ -156,7 +156,7 @@ public class Algorithm {
 
     public void sixthPoint(Goal currentGoal) {
         logger.info("6 point is called");
-        count++;
+        countOfSteps++;
         Precondition newPrecondition = new Precondition(currentGoal.getLeftPart(), "parcel");
         logger.info("Adding new precondition - {} ", newPrecondition);
         newPrecondition.addLabel(Utils.getLabelsFromMainGoal(this.goals));
@@ -170,43 +170,34 @@ public class Algorithm {
 
     public void seventhPoint(Goal currentGoal) {
         logger.info("7 point is called");
-        count++;
-        Goal Wj = new Goal(currentGoal.getRightPart(), true);
-        Goal Wi = new Goal(currentGoal.getLeftPart(), true);
-        Wj.addLabel("V-2");
-        Wi.addLabel("V-1");
-        Goal goal = new Goal(Wj.getFormula(), "V-2", false);
-
-        this.goals.push(goal);
-        this.goalsToTrack.push(goal);
-
+        countOfSteps++;
+        Goal Wj = new Goal(currentGoal.getRightPart(), "V-1", true);
+        Goal Wi = new Goal(currentGoal.getLeftPart(), "V-2", true);
+        Goal goalWj = new Goal(Wj.getFormula(), "V-2", false);
+        Goal goalWi = new Goal(Wi.getFormula(), "V-1", false);
+        this.goals.push(goalWj);
+        this.goalsToTrack.push(goalWi);
+        this.goalsToTrack.push(goalWj);
         Stack<Goal> newGoals = new Stack<>();
         newGoals.push(Wi);
         Algorithm algorithm = new Algorithm(preconditions, newGoals);
-        try {
-            algorithm.isReachable();
-            Utils.removeLabelsFromPreconditions(algorithm.preconditions);
-            algorithm.goals.push(Wj);
-            algorithm.isReachable();
-            Utils.removeLabelsFromPreconditions(algorithm.preconditions);
-            eleventhPoint();
-        } catch (MetaStatementNotProvableException ex) {
-            throw new MetaStatementNotProvableException("", 7);
-        }
+        algorithm.prove();
+        Utils.removeLabelsFromPreconditions(algorithm.preconditions);
+        algorithm.goals.push(Wj);
+        algorithm.prove();
+        Utils.removeLabelsFromPreconditions(algorithm.preconditions);
+        ninthPoint();
     }
 
     public void eightPoint(Goal currentGoal) {
         logger.info("8 point is called");
-        count++;
         Goal Wj = new Goal(currentGoal.getRightPart(), true);
         Goal Wi = new Goal(currentGoal.getLeftPart(), true);
         Wj.addLabel("V-4");
         Wi.addLabel("V-3");
         Goal goal = new Goal(Wi.getFormula(), "V-3", false);
         this.goals.push(goal);
-
-        //this.goalsToTrack.push(goal);
-
+        this.goalsToTrack.push(goal);
         Stack<Goal> newGoals = new Stack<>();
         newGoals.push(Wi);
         Algorithm algorithm = new Algorithm(preconditions, newGoals);
@@ -221,9 +212,35 @@ public class Algorithm {
         }
     }
 
+    public void firstSubPointOfEight(Algorithm algorithm) {
+        logger.info("8.1 point is called");
+        countOfSteps++;
+        algorithm.prove();
+        ninthPoint();
+    }
+
+    public void secondSubPointOfEight(Algorithm algorithm, Goal Wj) {
+        logger.info("8.2 point is called");
+        countOfSteps++;
+        while (!algorithm.goals.isEmpty()) {
+            Goal pop = algorithm.goals.pop();
+            if (pop.getLabels().contains("V4")) {
+                this.preconditions.get(pop.getIndexOfV4()).removeLabel("V4");
+            }
+        }
+        this.goals.pop();
+        Utils.removePreconditionsWithLabelsV3(algorithm.preconditions);
+        algorithm.goals.push(Wj);
+        Goal goal = new Goal(Wj.getFormula(), "V-4", false);
+        this.goals.push(goal);
+        this.goalsToTrack.push(goal);
+        algorithm.prove();
+        ninthPoint();
+    }
+
     public void thirdSubPointOfEight(Goal currentGoal, Algorithm algorithm) {
         logger.info("8.3 point is called");
-        count++;
+        countOfSteps++;
         while (!algorithm.goals.isEmpty()) {
             Goal pop = algorithm.goals.pop();
             if (pop.getLabels().contains("V4")) {
@@ -237,53 +254,31 @@ public class Algorithm {
             this.goals.pop();
         } else {
             this.preconditions.add(new Precondition("(¬" + currentGoal.formula + ")", "parcel", "V2"));
-            this.goals.push(new Goal("⊥", false));
+            Goal goal = new Goal("⊥", false);
+            this.goals.push(goal);
+            this.goalsToTrack.push(goal);
         }
         thirdPoint();
     }
 
-    public void firstSubPointOfEight(Algorithm algorithm) {
-        logger.info("8.1 point is called");
-        count++;
-        algorithm.isReachable();
-        eleventhPoint();
-    }
-
-    public void secondSubPointOfEight(Algorithm algorithm, Goal Wj) {
-        logger.info("8.2 point is called");
-        count++;
-        while (!algorithm.goals.isEmpty()) {
-            Goal pop = algorithm.goals.pop();
-            if (pop.getLabels().contains("V4")) {
-                this.preconditions.get(pop.getIndexOfV4()).removeLabel("V4");
-            }
-        }
-        this.goals.pop();
-        Utils.removePreconditionsWithLabelsV3(algorithm.preconditions);
-        algorithm.goals.push(Wj);
-        this.goals.push(new Goal(Wj.getFormula(), "V-4", false));
-        algorithm.isReachable();
-        eleventhPoint();
-    }
-
-    public void eleventhPoint() {
-        logger.info("11 point is called");
-        count++;
+    public void ninthPoint() {
+        logger.info("9 point is called");
+        countOfSteps++;
         Goal currentGoal = goals.peek();
         if (Utils.isPreconditionPresent(this.preconditions, currentGoal.getFormula())) {
             logger.info("Current goal - {} is reached as it is present in preconditions", currentGoal);
-            twelfthPoint();
+            tenthPoint();
         } else if (currentGoal.getFormula().equals("⊥") && Utils.doesPredicationsHaveContradiction(this.preconditions)) {
             logger.info("Current goal - {} is reached as contradiction is present in preconditions", currentGoal);
-            twelfthPoint();
+            tenthPoint();
         } else {
-            thirteenthPoint(currentGoal);
+            eleventhPoint(currentGoal);
         }
     }
 
-    public void twelfthPoint() {
-        logger.info("12 point is called");
-        count++;
+    public void tenthPoint() {
+        logger.info("10 point is called");
+        countOfSteps++;
         Goal currentReachedGoal = goals.pop();
         if (currentReachedGoal.isMainGoal()) {
             logger.info("The main goal - {} is reached", currentReachedGoal);
@@ -296,16 +291,16 @@ public class Algorithm {
             } else if (!previousGoal.isSimple() &&
                     previousGoal.getMainSign().equals("⊃") &&
                     previousGoal.getRightPart().equals(currentReachedGoal.formula)) {
-                updatePreconditionsAsCurrentGoalIsImplication(previousGoal);
+                updatePreconditionsAsPreviousGoalContainsImplication(previousGoal);
             } else if (!previousGoal.isSimple() &&
                     previousGoal.getMainSign().equals("&") &&
                     previousGoal.getRightPart().equals(currentReachedGoal.formula)) {
-                updatePreconditionsAsCurrentReachedGoalIsConjunction(previousGoal);
+                updatePreconditionsAsPreviousGoalContainsConjunction(previousGoal);
             } else if (!previousGoal.isSimple() &&
                     previousGoal.getMainSign().equals("∨") &&
                     (previousGoal.getRightPart().equals(currentReachedGoal.formula) ||
                             previousGoal.getLeftPart().equals(currentReachedGoal.formula))) {
-                updatePreconditionsAsCurrentReachedGoalIsDisjunction(previousGoal);
+                updatePreconditionsAsPreviousGoalContainsDisjunction(previousGoal);
             } else if (currentReachedGoal.getLabels().contains("V4")) {
                 removeCurrentReachedGoalAsItHasV4Label(currentReachedGoal);
             }
@@ -313,19 +308,19 @@ public class Algorithm {
         }
     }
 
-    public void thirteenthPoint(Goal currentGoal) {
-        logger.info("13 point is called");
-        count++;
+    public void eleventhPoint(Goal currentGoal) {
+        logger.info("11 point is called");
+        countOfSteps++;
         if (currentGoal.getFormula().equals("⊥")) {
-            fourteenthPoint();
+            twelfthPoint();
         } else {
             forthPoint();
         }
     }
 
-    public void fourteenthPoint() {
-        logger.info("14 point is called");
-        count++;
+    public void twelfthPoint() {
+        logger.info("12 point is called");
+        countOfSteps++;
         int indexOfFirstPreconditionToInspect = Utils.findFirstPreconditionToInspect(this.preconditions);
         if (indexOfFirstPreconditionToInspect != -1) {
             Precondition preconditionToInspect = preconditions.get(indexOfFirstPreconditionToInspect);
@@ -344,22 +339,17 @@ public class Algorithm {
                 addNewGoal(indexOfFirstPreconditionToInspect, preconditionToInspect, newGoal);
                 forthPoint();
             } else {
-                fifteenthPoint();
+                thirteenthPoint();
             }
         } else {
-            fifteenthPoint();
+            thirteenthPoint();
         }
     }
 
-    public void fifteenthPoint() throws MetaStatementNotProvableException {
-        logger.info("15 point is called");
-        count++;
-        seventeenthPoint();
-    }
 
-    public void seventeenthPoint() throws MetaStatementNotProvableException {
-        logger.info("17 point is called");
-        count++;
+    public void thirteenthPoint() {
+        logger.info("13 point is called");
+        countOfSteps++;
         Goal currentGoal = goals.peek();
         if (currentGoal.getFormula().equals("⊥")) {
             if (currentGoal.getLabels().contains("V-2") || currentGoal.getLabels().contains("V-1")) {
@@ -370,7 +360,7 @@ public class Algorithm {
                     }
                 }
                 this.preconditions.removeIf(next -> next.getLabels().contains("V-1") || next.getLabels().contains("V-2"));
-                throw new MetaStatementNotProvableException("The current goal is ⊥ with label V-1 and cant be proved", 17);
+                throw new MetaStatementNotProvableException();
             }
             if (currentGoal.getLabels().contains("V-3")) {
                 throw new TemporaryMovingToSecondSubPointOrEight();
@@ -378,10 +368,10 @@ public class Algorithm {
                 throw new TemporaryMovingToThirdSubPointOrEight();
             } else {
                 logger.error("The current goal - {} is unreachable , algorithm finishes its work", currentGoal);
-                throw new MetaStatementNotProvableException("The current goal is ⊥ and cant be proved", 17);
+                throw new MetaStatementNotProvableException();
             }
         }
-        throw new MetaStatementNotProvableException("The current goal is ⊥ and cant be proved", 17);
+        throw new MetaStatementNotProvableException();
     }
 
     private void addNewGoal(int indexOfFirstPreconditionToInspect, Precondition preconditionToInspect, Goal newGoal) {
@@ -390,7 +380,6 @@ public class Algorithm {
         newGoal.setIndexOfV4(indexOfFirstPreconditionToInspect);
         goals.push(newGoal);
         goalsToTrack.push(newGoal);
-
         logger.info("Updating label for precondition - {}", preconditionToInspect);
         preconditions.get(indexOfFirstPreconditionToInspect).addLabel("V4");
     }
@@ -412,10 +401,11 @@ public class Algorithm {
         ) {
             this.preconditions.get(currentReachedGoal.getIndexOfV4()).removeLabel("V4");
         }
-        logger.info("Current goal - {} has V4 label", currentReachedGoal);
+        logger.info("Current goal - {} has label V4", currentReachedGoal);
     }
 
-    private void updatePreconditionsAsCurrentReachedGoalIsDisjunction(Goal previousGoal) {
+    private void updatePreconditionsAsPreviousGoalContainsDisjunction
+            (Goal previousGoal) {
         Precondition newPrecondition = new Precondition(previousGoal.getFormula(), "∨a");
         logger.info("Adding new precondition -{}", newPrecondition);
         newPrecondition.addLabel(Utils.getLabelsFromMainGoal(this.goals));
@@ -425,19 +415,21 @@ public class Algorithm {
         }
     }
 
-    private void updatePreconditionsAsCurrentReachedGoalIsConjunction(Goal previousGoal) {
+    private void updatePreconditionsAsPreviousGoalContainsConjunction
+            (Goal previousGoal) {
         Precondition newPrecondition = new Precondition(previousGoal.getFormula(), "&a", "V0");
         logger.info("Adding new precondition -{}", newPrecondition);
         newPrecondition.addLabel(Utils.getLabelsFromMainGoal(this.goals));
         preconditions.add(newPrecondition);
     }
 
-    private void updatePreconditionsAsCurrentGoalIsImplication(Goal previousGoal) {
+    private void updatePreconditionsAsPreviousGoalContainsImplication
+            (Goal previousGoal) {
         Precondition newPrecondition = new Precondition(previousGoal.getFormula(), "⊃a");
         logger.info("Adding new precondition -{}", newPrecondition);
         int indexOfLeftPart = Utils.indexOf(this.preconditions, previousGoal.getLeftPart());
         if (indexOfLeftPart != -1) {
-            logger.info("Blocking from - {} to - {}", preconditions.get(indexOfLeftPart), newPrecondition);
+            logger.info("Blocking preconditions from - {} to - {}", preconditions.get(indexOfLeftPart), newPrecondition);
             Utils.blockPreconditionsAndResetLabels(this.preconditions, indexOfLeftPart);
         }
         newPrecondition.addLabel(Utils.getLabelsFromMainGoal(this.goals));
@@ -449,11 +441,27 @@ public class Algorithm {
 
     private void updatePreconditionsAsCurrentReachedGoalIsContradiction(int index) {
         Precondition newPrecondition = new Precondition("(¬" + preconditions.get(index).getFormula() + ")", "¬a");
-        logger.info("Blocking from - {} to - {}", preconditions.get(index), newPrecondition);
+        logger.info("Blocking preconditions from - {} to - {}", preconditions.get(index), newPrecondition);
         Utils.blockPreconditionsAndResetLabels(this.preconditions, index);
         logger.info("Adding new precondition -{}", newPrecondition);
         newPrecondition.addLabel(Utils.getLabelsFromMainGoal(this.goals));
         preconditions.add(newPrecondition);
+    }
+
+    private String constructDenial(String formula) {
+        return "(¬" + formula + ")";
+    }
+
+    Stack<Goal> goalsToTrack = new Stack<>();
+    private static final Logger logger = LoggerFactory.getLogger(Algorithm.class);
+    public int countOfSteps;
+
+    public Stack<Goal> getGoalsToTrack() {
+        return goalsToTrack;
+    }
+
+    private void fillTheStack() {
+        this.goalsToTrack.addAll(this.goals);
     }
 
 }
